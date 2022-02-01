@@ -1,0 +1,46 @@
+name: .NET Core Deploy to IIS
+
+on: 
+  # push:
+    # branches:
+    #   - "self-hosted"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+
+    runs-on: self-hosted
+    
+    steps:
+    - uses: actions/checkout@v2
+
+    #- name: Setup .NET Core
+    #  uses: actions/setup-dotnet@v1
+    #  with:
+    #    dotnet-version: 3.0.100
+    
+    # dotnet build and publish
+    - name: Restore Packages
+      run: dotnet restore .\github-actions-sample.sln
+    
+    - name: Build with dotnet
+      run: dotnet build --configuration Release .\github-actions-sample
+
+    - name: dotnet publish 
+      run: |
+        dotnet publish -c Release -o githubactionssample .\github-actions-sample
+
+    - name: Deploy to IIS
+      run: |
+        iisreset /stop
+        Copy-Item ./githubactionssample/* C:\inetpub\wwwroot\github-actions-sample -Recurse -Force
+        iisreset /start
+    
+    - name: Curl the website as a smoke test
+      run: curl http://localhost:8081
+
+    #- name: Run Web Test
+    #  run: |
+    #    dotnet build --configuration Release .\dotnet-core-webapp.webtest
+    #    cd .\dotnet-core-webapp.webtests
+    #    dotnet test
